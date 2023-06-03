@@ -5,7 +5,7 @@ import logging
 from src.BatchJSONMessageProcessor import BatchJSONMessageProcessor
 
 
-async def main(logger: logging.Logger, batch_size, output_folder, interval):
+async def main(logger: logging.Logger, stream_name, batch_size, output_folder, interval):
     logger.info("==== main ====")
 
     while True:
@@ -37,8 +37,7 @@ if __name__ == "__main__":
 
         logger.info(
             f'BatchJSONMessageProcessor started with; stream_name={stream_name}, batch_size={batch_size}, output_folder={output_folder}, interval={interval}')
-        asyncio.run(main(stream_name, batch_size,
-                    output_folder, int(interval), logger))
+        asyncio.run(main(logger, stream_name, batch_size, output_folder, int(interval)))
     else:
         logging.basicConfig(level=logging.INFO)
         logger = logging.getLogger()
