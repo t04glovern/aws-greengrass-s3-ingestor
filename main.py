@@ -9,33 +9,37 @@ async def main(logger: logging.Logger, batch_size, output_folder, interval):
     logger.info("==== main ====")
 
     while True:
-        mjmp = None
+        processor = None
         try:
-            mjmp = BatchJSONMessageProcessor(batch_size=int(batch_size), output_folder=output_folder, interval=interval, logger=logger)
-            await mjmp.Run()
+            processor = BatchJSONMessageProcessor(stream_name=stream_name, batch_size=int(
+                batch_size), output_folder=output_folder, interval=interval, logger=logger)
+            await processor.Run()
         except Exception:
             logger.exception("Exception while running")
         finally:
-            if mjmp is not None:
-                mjmp.Close()
+            if processor is not None:
+                processor.Close()
         logger.info("Something went wrong, wait a minute before trying again")
         time.sleep(60)
 
 
 if __name__ == "__main__":
-    # args : batch_size, output_folder, interval, log_level
-    if len(sys.argv) == 5:
-        batch_size = sys.argv[1]
-        output_folder = sys.argv[2]
-        interval = sys.argv[3]
-        log_level = sys.argv[4]
+    # args : stream_name, batch_size, output_folder, interval, log_level
+    if len(sys.argv) == 6:
+        stream_name = sys.argv[1]
+        batch_size = sys.argv[2]
+        output_folder = sys.argv[3]
+        interval = sys.argv[4]
+        log_level = sys.argv[5]
 
         logging.basicConfig(level=log_level)
         logger = logging.getLogger()
 
-        logger.info(f'BatchJSONMessageProcessor started with; batch_size={batch_size}, output_folder={output_folder}, interval={interval}')
-        asyncio.run(main(logger, batch_size, output_folder, int(interval)))
+        logger.info(
+            f'BatchJSONMessageProcessor started with; stream_name={stream_name}, batch_size={batch_size}, output_folder={output_folder}, interval={interval}')
+        asyncio.run(main(stream_name, batch_size,
+                    output_folder, int(interval), logger))
     else:
         logging.basicConfig(level=logging.INFO)
         logger = logging.getLogger()
-        logger.error(f'4 argument required, only {len(sys.argv)-1} provided.')
+        logger.error(f'5 argument required, only {len(sys.argv)-1} provided.')

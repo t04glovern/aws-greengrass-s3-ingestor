@@ -20,10 +20,10 @@ class BatchJSONMessageProcessor:
     """BatchJSONMessageProcessor reads JSON messages from a stream and writes batches of them into a gzip file."""
 
     __stream_name = "BatchMessageStream"
-    __output_folder = "./batched_messages/"
+    __output_folder = "gzip"
     __batch_id = 0
 
-    def __init__(self, batch_size, output_folder, interval, logger: logging.Logger, client: StreamManagerClient = None):
+    def __init__(self, stream_name, batch_size, output_folder, interval, logger: logging.Logger, client: StreamManagerClient = None):
         self.__client = client
         if self.__client is None:
             self.__client = StreamManagerClient()
@@ -31,8 +31,9 @@ class BatchJSONMessageProcessor:
         self.__interval = interval
         self.__batch_size = batch_size
         self.__output_folder = output_folder
+        self.__stream_name = stream_name
 
-        logger.debug(f"BatchJSONMessageProcessor initialized with batch_size={batch_size}, output_folder={output_folder}")
+        logger.debug(f"BatchJSONMessageProcessor initialized with stream_name={stream_name}, batch_size={batch_size}, output_folder={output_folder}")
 
         # Try deleting the stream (if it exists) so that we have a fresh start
         try:
@@ -67,7 +68,7 @@ class BatchJSONMessageProcessor:
                     ReadMessagesOptions(
                         desired_start_sequence_number=next_seq,
                         min_message_count=self.__batch_size,
-                        max_message_count=self.__batch_size + 10,
+                        max_message_count=self.__batch_size * 10,
                         read_timeout_millis=1000)
                 )
 

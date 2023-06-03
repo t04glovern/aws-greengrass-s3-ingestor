@@ -27,7 +27,7 @@ class TestBatchJSONMessageProcessor(unittest.TestCase):
 
             read_messages_mock.return_value = mock_messages
 
-            bmp = BatchJSONMessageProcessor(batch_size=3, output_folder=tmpdirname, interval=1, logger=logger, client=mock_client)
+            bmp = BatchJSONMessageProcessor(stream_name='stream1', batch_size=3, output_folder=tmpdirname, interval=1, logger=logger, client=mock_client)
             loop = asyncio.get_event_loop()
 
             # Testing with some messages - output file should be created
