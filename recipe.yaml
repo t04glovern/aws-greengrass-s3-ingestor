@@ -1,0 +1,25 @@
+---
+RecipeFormatVersion: "2020-01-25"
+ComponentName: "{COMPONENT_NAME}"
+ComponentVersion: "{COMPONENT_VERSION}"
+ComponentDescription: "This is simple stream to GZIP processor written in python."
+ComponentPublisher: "{COMPONENT_AUTHOR}"
+ComponentDependencies:
+  aws.greengrass.StreamManager:
+    VersionRequirement: "^2.0.0"
+    DependencyType: "HARD"
+ComponentConfiguration:
+  DefaultConfiguration:
+    BatchSize: "20"
+    OutputFolder: "gzip"
+    Interval: "30"
+    LogLevel: "INFO"
+Manifests:
+  - Platform:
+      os: linux
+    Artifacts:
+      - URI: "s3://BUCKET_NAME/COMPONENT_NAME/COMPONENT_VERSION/devopstar-jsonl-gzip.zip"
+        Unarchive: ZIP
+    Lifecycle:
+      Run: "python3 -u {artifacts:decompressedPath}/devopstar-jsonl-gzip/main.py \"{configuration:/BatchSize}\" \"{configuration:/OutputFolder}\" \"{configuration:/Interval}\" \"{configuration:/LogLevel}\""
+      Install: "pip3 install --user -r {artifacts:decompressedPath}/devopstar-jsonl-gzip/requirements.txt"
