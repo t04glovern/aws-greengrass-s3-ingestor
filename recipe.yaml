@@ -19,8 +19,8 @@ Manifests:
   - Platform:
       os: linux
     Artifacts:
-      - URI: "s3://BUCKET_NAME/COMPONENT_NAME/COMPONENT_VERSION/devopstar-jsonl-gzip.zip"
+      - URI: "s3://BUCKET_NAME/COMPONENT_NAME/COMPONENT_VERSION/aws-greengrass-json-gzip.zip"
         Unarchive: ZIP
     Lifecycle:
-      Run: "python3 -u {artifacts:decompressedPath}/devopstar-jsonl-gzip/main.py \"{configuration:/StreamName}\" \"{configuration:/BatchSize}\" \"{configuration:/OutputFolder}\" \"{configuration:/Interval}\" \"{configuration:/LogLevel}\""
-      Install: "pip3 install --user -r {artifacts:decompressedPath}/devopstar-jsonl-gzip/requirements.txt"
+      Run: "python3 -u {artifacts:decompressedPath}/aws-greengrass-json-gzip/main.py \"{configuration:/StreamName}\" \"{configuration:/BatchSize}\" \"{configuration:/OutputFolder}\" \"{configuration:/Interval}\" \"{configuration:/LogLevel}\""
+      Install: "pip3 install --user -r {artifacts:decompressedPath}/aws-greengrass-json-gzip/requirements.txt"

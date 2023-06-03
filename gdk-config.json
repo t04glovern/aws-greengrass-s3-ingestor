@@ -1,6 +1,6 @@
 {
   "component": {
-    "com.devopstar.jsonl.gzip": {
+    "com.devopstar.json.gzip": {
       "author": "Nathan Glover",
       "version": "NEXT_PATCH",
       "build": {
