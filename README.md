@@ -18,10 +18,15 @@ ComponentDependencies:
     DependencyType: "HARD"
 ComponentConfiguration:
   DefaultConfiguration:
-    StreamName: "BatchMessageStream"
-    BatchSize: "20"
-    OutputFolder: "gzip"
-    Interval: "30"
+    Processor:
+      StreamName: "BatchMessageStream"
+      BatchSize: "20"
+      Interval: "30"
+      Path: "/tmp/greengrass/gzip"
+    Uploader:
+      BucketName: "my-bucket"
+      Interval: "1"
+      Path: "/tmp/greengrass/gzip/*"
     LogLevel: "INFO"
 ```
 
@@ -36,10 +41,17 @@ ComponentConfiguration:
   },
   "ComponentConfiguration": {
     "DefaultConfiguration": {
-      "StreamName": "BatchMessageStream",
-      "BatchSize": "20",
-      "OutputFolder": "gzip",
-      "Interval": "30",
+      "Processor": {
+        "StreamName": "BatchMessageStream",
+        "BatchSize": "20",
+        "Interval": "30",
+        "Path": "/tmp/greengrass/gzip"
+      },
+      "Uploader": {
+        "BucketName": "my-bucket",
+        "Interval": "1",
+        "Path": "/tmp/greengrass/gzip/*"
+      },
       "LogLevel": "INFO"
     }
   }

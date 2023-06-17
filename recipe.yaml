@@ -10,10 +10,15 @@ ComponentDependencies:
     DependencyType: "HARD"
 ComponentConfiguration:
   DefaultConfiguration:
-    StreamName: "BatchMessageStream"
-    BatchSize: "20"
-    OutputFolder: "gzip"
-    Interval: "30"
+    Processor:
+      StreamName: "BatchMessageStream"
+      BatchSize: "20"
+      Interval: "30"
+      Path: "/tmp/greengrass/gzip"
+    Uploader:
+      BucketName: "<PLACEHOLDER BUCKET HERE>"
+      Interval: "1"
+      Path: "/tmp/greengrass/gzip/*"
     LogLevel: "INFO"
 Manifests:
   - Platform:
@@ -22,5 +27,9 @@ Manifests:
       - URI: "s3://BUCKET_NAME/COMPONENT_NAME/COMPONENT_VERSION/aws-greengrass-json-gzip.zip"
         Unarchive: ZIP
     Lifecycle:
-      Run: "python3 -u {artifacts:decompressedPath}/aws-greengrass-json-gzip/main.py \"{configuration:/StreamName}\" \"{configuration:/BatchSize}\" \"{configuration:/OutputFolder}\" \"{configuration:/Interval}\" \"{configuration:/LogLevel}\""
-      Install: "pip3 install --user -r {artifacts:decompressedPath}/aws-greengrass-json-gzip/requirements.txt"
+      Install: 
+        Script: |-
+          pip3 install --user -r {artifacts:decompressedPath}/aws-greengrass-json-gzip/requirements.txt
+      Run: 
+        Script: |-
+          python3 -u {artifacts:decompressedPath}/aws-greengrass-json-gzip/main.py "{configuration:/Processor/StreamName}" "{configuration:/Processor/BatchSize}" "{configuration:/Processor/Interval}" "{configuration:/Processor/Path}" "{configuration:/Uploader/BucketName}" "{configuration:/Uploader/Interval}" "{configuration:/Uploader/Path}" "{configuration:/LogLevel}"

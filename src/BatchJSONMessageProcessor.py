@@ -9,8 +9,6 @@ from stream_manager import (
     ResourceNotFoundException,
     StrategyOnFull,
     StreamManagerClient,
-    StreamManagerException,
-    ValidationException,
     NotEnoughMessagesException
 )
 from stream_manager.util import Util
