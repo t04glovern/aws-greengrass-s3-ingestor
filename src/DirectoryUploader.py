@@ -30,12 +30,17 @@ class DirectoryUploader:
     __stream_name = "DirectoryUploader"
     __status_stream_name = "DirectoryUploaderStatus"
 
-    def __init__(self, pathname, bucket_name, interval, logger: logging.Logger, client: StreamManagerClient = None):
+    def __init__(self, pathname, bucket_name, prefix, interval, logger: logging.Logger, client: StreamManagerClient = None):
         self.__pathname = pathname
         self.__bucket_name = bucket_name
         self.__stream_name = bucket_name + "Stream"
         self.__status_stream_name = self.__stream_name + "Status"
         self.__client = client
+        if prefix != "":
+            # Ensure the prefix ends with a trailing slash
+            self.__prefix = prefix if prefix.endswith('/') else prefix + '/'
+        else:
+            self.__prefix = prefix
         if (self.__client == None):
             self.__client = StreamManagerClient()
         self.__logger = logger
@@ -115,7 +120,7 @@ class DirectoryUploader:
                         head, tail = ntpath.split(file)
 
                         # Adding timestamp placeholders to the key for partitioning
-                        key_with_partition = "year=!{timestamp:YYYY}/month=!{timestamp:MM}/day=!{timestamp:dd}/hour=!{timestamp:HH}/" + tail
+                        key_with_partition = self.__prefix + "year=!{timestamp:YYYY}/month=!{timestamp:MM}/day=!{timestamp:dd}/hour=!{timestamp:HH}/" + tail
 
                         s3_export_task_definition = S3ExportTaskDefinition(
                             input_url="file://"+file,

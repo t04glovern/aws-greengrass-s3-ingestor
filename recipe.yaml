@@ -17,6 +17,7 @@ ComponentConfiguration:
       Path: "/tmp/greengrass/gzip"
     Uploader:
       BucketName: "<PLACEHOLDER BUCKET HERE>"
+      Prefix: ""
       Interval: "1"
       Path: "/tmp/greengrass/gzip/*"
     LogLevel: "INFO"
@@ -32,4 +33,4 @@ Manifests:
           pip3 install --user -r {artifacts:decompressedPath}/aws-greengrass-json-gzip/requirements.txt
       Run: 
         Script: |-
-          python3 -u {artifacts:decompressedPath}/aws-greengrass-json-gzip/main.py "{configuration:/Processor/StreamName}" "{configuration:/Processor/BatchSize}" "{configuration:/Processor/Interval}" "{configuration:/Processor/Path}" "{configuration:/Uploader/BucketName}" "{configuration:/Uploader/Interval}" "{configuration:/Uploader/Path}" "{configuration:/LogLevel}"
+          python3 -u {artifacts:decompressedPath}/aws-greengrass-json-gzip/main.py "{configuration:/Processor/StreamName}" "{configuration:/Processor/BatchSize}" "{configuration:/Processor/Interval}" "{configuration:/Processor/Path}" "{configuration:/Uploader/BucketName}" "{configuration:/Uploader/Prefix}" "{configuration:/Uploader/Interval}" "{configuration:/Uploader/Path}" "{configuration:/LogLevel}"

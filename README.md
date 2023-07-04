@@ -25,6 +25,7 @@ ComponentConfiguration:
       Path: "/tmp/greengrass/gzip"
     Uploader:
       BucketName: "my-bucket"
+      Prefix: "sample-devices"
       Interval: "1"
       Path: "/tmp/greengrass/gzip/*"
     LogLevel: "INFO"
@@ -49,6 +50,7 @@ ComponentConfiguration:
       },
       "Uploader": {
         "BucketName": "my-bucket",
+        "Prefix": "sample-devices",
         "Interval": "1",
         "Path": "/tmp/greengrass/gzip/*"
       },
