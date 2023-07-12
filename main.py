@@ -1,17 +1,16 @@
-import sys
+import argparse
 import asyncio
 import logging
 
-from src.BatchJSONMessageProcessor import BatchJSONMessageProcessor
-from src.DirectoryUploader import DirectoryUploader
+from src.BatchMessageProcessor import BatchMessageProcessor, ProcessorConfig
+from src.DirectoryUploader import DirectoryUploader, UploaderConfig
 
 
-async def process_messages(logger: logging.Logger, processor_stream_name, processor_batch_size, processor_path, processor_interval):
+async def process_messages(logger: logging.Logger, config: ProcessorConfig):
     while True:
         processor = None
         try:
-            processor = BatchJSONMessageProcessor(
-                stream_name=processor_stream_name, batch_size=int(processor_batch_size), output_folder=processor_path, interval=processor_interval, logger=logger)
+            processor = BatchMessageProcessor(config, logger)
             await processor.Run()
         except Exception:
             logger.exception("Exception while running")
@@ -19,20 +18,16 @@ async def process_messages(logger: logging.Logger, processor_stream_name, proces
             if processor is not None:
                 processor.Close()
         logger.info(
-            "Something went wrong with message processing, wait a minute before trying again")
+            "Something went wrong with message processing, wait a minute before trying again"
+        )
         await asyncio.sleep(60)
 
 
-async def upload_directory(logger: logging.Logger, uploader_path, uploader_bucket_name, uploader_prefix, uploader_interval):
+async def upload_directory(logger: logging.Logger, config: UploaderConfig):
     while True:
         uploader = None
         try:
-            uploader = DirectoryUploader(
-                pathname=uploader_path, 
-                bucket_name=uploader_bucket_name,
-                prefix=uploader_prefix,
-                interval=uploader_interval, 
-                logger=logger)
+            uploader = DirectoryUploader(config, logger)
             await uploader.Run()
         except Exception:
             logger.exception("Exception while running")
@@ -40,36 +35,54 @@ async def upload_directory(logger: logging.Logger, uploader_path, uploader_bucke
             if uploader is not None:
                 uploader.Close()
         logger.info(
-            "Something went wrong with directory uploading, wait a minute before trying again")
+            "Something went wrong with directory uploading, wait a minute before trying again"
+        )
         await asyncio.sleep(60)
 
 
-async def main(logger: logging.Logger, processor_stream_name, processor_batch_size, processor_interval, processor_path, uploader_bucket_name, uploader_prefix, uploader_interval, uploader_path):
-    processor_task = asyncio.create_task(process_messages(logger, processor_stream_name, processor_batch_size, processor_path, processor_interval))
-    uploader_task = asyncio.create_task(upload_directory(logger, uploader_path, uploader_bucket_name, uploader_prefix, uploader_interval))
+async def main(
+    logger: logging.Logger,
+    processor_config: ProcessorConfig,
+    uploader_config: UploaderConfig,
+):
+    processor_task = asyncio.create_task(process_messages(logger, processor_config))
+    uploader_task = asyncio.create_task(upload_directory(logger, uploader_config))
 
     await asyncio.gather(processor_task, uploader_task)
 
 
 if __name__ == "__main__":
-    if len(sys.argv) == 10:
-        processor_stream_name = sys.argv[1]
-        processor_batch_size = sys.argv[2]
-        processor_interval = sys.argv[3]
-        processor_path = sys.argv[4]
-        uploader_bucket_name = sys.argv[5]
-        uploader_prefix = sys.argv[6]
-        uploader_interval = sys.argv[7]
-        uploader_path = sys.argv[8]
-        log_level = sys.argv[9]
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--processor_stream_name")
+    parser.add_argument("--processor_batch_size", type=int)
+    parser.add_argument("--processor_interval", type=int)
+    parser.add_argument("--processor_path")
+    parser.add_argument("--uploader_bucket_name")
+    parser.add_argument("--uploader_prefix")
+    parser.add_argument("--uploader_interval", type=int)
+    parser.add_argument("--uploader_path")
+    parser.add_argument("--log_level")
 
-        logging.basicConfig(level=log_level)
-        logger = logging.getLogger()
+    args = parser.parse_args()
 
-        logger.info(
-            f'Started with; processor_stream_name={processor_stream_name}, processor_batch_size={processor_batch_size}, processor_interval={processor_interval}, processor_path={processor_path}, uploader_bucket_name={uploader_bucket_name}, uploader_prefix={uploader_prefix}, uploader_interval={uploader_interval}, uploader_path={uploader_path}')
-        asyncio.run(main(logger, processor_stream_name, processor_batch_size, int(processor_interval), processor_path, uploader_bucket_name, uploader_prefix, int(uploader_interval), uploader_path))
-    else:
-        logging.basicConfig(level=logging.INFO)
-        logger = logging.getLogger()
-        logger.error(f'9 arguments required, only {len(sys.argv)-1} provided.')
+    processor_config = ProcessorConfig(
+        stream_name=args.processor_stream_name,
+        batch_size=args.processor_batch_size,
+        interval=args.processor_interval,
+        path=args.processor_path,
+    )
+
+    uploader_config = UploaderConfig(
+        bucket_name=args.uploader_bucket_name,
+        prefix=args.uploader_prefix,
+        interval=args.uploader_interval,
+        path=args.uploader_path,
+    )
+
+    logging.basicConfig(level=args.log_level)
+    logger = logging.getLogger()
+
+    logger.info(
+        f"Started with; processor_config={processor_config}, uploader_config={uploader_config}"
+    )
+    asyncio.run(main(logger, processor_config, uploader_config))

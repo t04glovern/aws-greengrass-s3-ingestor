@@ -3,35 +3,48 @@ import gzip
 import logging
 import json
 import os
+
+from dataclasses import dataclass
+
 from stream_manager import (
     MessageStreamDefinition,
     ReadMessagesOptions,
     ResourceNotFoundException,
     StrategyOnFull,
     StreamManagerClient,
-    NotEnoughMessagesException
+    NotEnoughMessagesException,
 )
-from stream_manager.util import Util
 
 
-class BatchJSONMessageProcessor:
-    """BatchJSONMessageProcessor reads JSON messages from a stream and writes batches of them into a gzip file."""
+@dataclass
+class ProcessorConfig:
+    stream_name: str
+    batch_size: int
+    interval: int
+    path: str
 
-    __stream_name = "BatchMessageStream"
-    __output_folder = "gzip"
+
+class BatchMessageProcessor:
+    """BatchMessageProcessor reads JSON messages from a stream and writes batches of them into a gzip file."""
+
     __batch_id = 0
 
-    def __init__(self, stream_name, batch_size, output_folder, interval, logger: logging.Logger, client: StreamManagerClient = None):
+    def __init__(
+        self,
+        config: ProcessorConfig,
+        logger: logging.Logger,
+        client: StreamManagerClient = None,
+    ):
         self.__client = client
         if self.__client is None:
             self.__client = StreamManagerClient()
         self.__logger = logger
-        self.__interval = interval
-        self.__batch_size = batch_size
-        self.__output_folder = output_folder
-        self.__stream_name = stream_name
+        self.__interval = config.interval
+        self.__batch_size = config.batch_size
+        self.__output_folder = config.path
+        self.__stream_name = config.stream_name
 
-        logger.debug(f"BatchJSONMessageProcessor initialized with stream_name={stream_name}, batch_size={batch_size}, output_folder={output_folder}")
+        logger.debug(f"BatchMessageProcessor initialized with {config}")
 
         # Try deleting the stream (if it exists) so that we have a fresh start
         try:
@@ -41,8 +54,10 @@ class BatchJSONMessageProcessor:
 
         # Create the message stream.
         self.__client.create_message_stream(
-            MessageStreamDefinition(name=self.__stream_name,
-                                    strategy_on_full=StrategyOnFull.OverwriteOldestData)
+            MessageStreamDefinition(
+                name=self.__stream_name,
+                strategy_on_full=StrategyOnFull.OverwriteOldestData,
+            )
         )
 
     def __is_valid_json(self, message):
@@ -55,19 +70,19 @@ class BatchJSONMessageProcessor:
 
     async def __read_messages(self, under_test):
         """Read messages from the stream and batch them."""
-        self.__logger.info("==== __read_messages  start ====")
         next_seq = 0
         keep_looping = True
         while keep_looping:
             try:
-                self.__logger.info("Reading messages from stream")
+                self.__logger.debug("Reading messages from stream")
                 messages_list = self.__client.read_messages(
                     self.__stream_name,
                     ReadMessagesOptions(
                         desired_start_sequence_number=next_seq,
                         min_message_count=self.__batch_size,
                         max_message_count=self.__batch_size * 10,
-                        read_timeout_millis=1000)
+                        read_timeout_millis=1000,
+                    ),
                 )
 
                 batched_messages = []
@@ -82,7 +97,7 @@ class BatchJSONMessageProcessor:
 
                 if len(batched_messages) >= self.__batch_size:
                     await self.__write_to_gzip(batched_messages)
-                    
+
                 # Update the next_seq here to ensure the next batch starts from the correct sequence
                 if messages_list:
                     next_seq = messages_list[-1].sequence_number + 1
@@ -93,18 +108,21 @@ class BatchJSONMessageProcessor:
             except Exception:
                 self.__logger.exception("Exception while reading messages")
             await asyncio.sleep(self.__interval)
-            keep_looping= not under_test
+            keep_looping = not under_test
 
     async def __write_to_gzip(self, batched_messages):
         """Write batched messages to a gzip file."""
-        self.__logger.info("==== __write_to_gzip  start ====")
         os.makedirs(self.__output_folder, exist_ok=True)
-        file_path = os.path.join(self.__output_folder, f"batch_{self.__batch_id}.jsonl.gz")
-        with gzip.open(file_path, 'wt') as f:
+        file_path = os.path.join(
+            self.__output_folder, f"batch_{self.__batch_id}.jsonl.gz"
+        )
+        with gzip.open(file_path, "wt") as f:
             for message in batched_messages:
                 json_obj = json.loads(message)  # Parse the JSON object
-                json_str = json.dumps(json_obj, separators=(',', ':'))  # Convert it back to string in compact representation
-                f.write(json_str + '\n')
+                json_str = json.dumps(
+                    json_obj, separators=(",", ":")
+                )  # Convert it back to string in compact representation
+                f.write(json_str + "\n")
         self.__logger.info(f"Successfully wrote batch_{self.__batch_id} to {file_path}")
         self.__batch_id += 1
 

@@ -6,13 +6,15 @@ This component takes a stream of JSON messages from StreamManager and batches th
 
 When deciding on the best way to upload data from a device to the cloud, one of the most important considerations is the cost of the data transfer. This component is designed to reduce the cost of data transfer by batching and compressing the data before uploading it to the cloud. It aims to be as cheap if not cheaper than using the current recommended approach to batch uploading of data using Kinesis Data Streams or Kinesis Firehose.
 
-Below is a high level cost comparison that provides some context as to why this component was created.
+Below is a high-level cost comparison that provides some context as to why this component was created.
 
 ![Kinesis, IoT Core vs S3 Costs for varying batch sizes (with compression)](img/cost-comparision-01.png)
 
-Similarly, another scoped down comparision between just Kinesis Data Streams and batched then compressed uploads to S3.
+Similarly, another scoped-down comparison between just Kinesis Data Streams and batched then compressed uploads to S3.
 
 ![Kinesis vs S3 Costs for varying batch sizes (with compression)](img/cost-comparision-02.png)
+
+To remain competitive with Kinesis Data Streams, the batch size needs to be at least 1000 messages. This is because Kinesis Data Streams charges per shard hour and each shard can handle up to 1000 messages per second. If the batch size is less than 1000 messages, then the cost of using Kinesis Data Streams will be less than using this component.
 
 ### What it is
 
@@ -27,14 +29,15 @@ Similarly, another scoped down comparision between just Kinesis Data Streams and
 
 ## Sample Configuration
 
-By default this component will take the JSON message stream from the `BatchMessageStream` stream and batch it into a gzip file every 30 seconds. If configured with `gzip` as the output folder, the gzip files will be written to `/greengrass/v2/work/com.devopstar.json.gzip/gzip/` on the device - This might changes depending on the installation path of Greengrass.
+By default, this component will take the JSON message stream from the `BatchMessageStream` stream and batch it into a gzip file every 30 seconds. If configured with `gzip` as the output folder, the gzip files will be written to `/greengrass/v2/work/com.devopstar.json.gzip/gzip/` on the device - This might change depending on the installation path of Greengrass.
 
 The BatchSize configuration is the minimum number of messages that will be batched into a gzip file. If there are not enough messages in the stream, the gzip file will not be created.
 
 The Maximum number of messages that will be batched into a gzip file is 10 times the BatchSize.
 
-**YAML example**
-```
+### YAML example
+
+```yaml
 ComponentDependencies:
   aws.greengrass.StreamManager:
     VersionRequirement: "^2.0.0"
@@ -54,7 +57,8 @@ ComponentConfiguration:
     LogLevel: "INFO"
 ```
 
-**JSON example**
+### JSON example
+
 ```json
 {
   "ComponentDependencies": {

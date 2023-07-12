@@ -31,6 +31,15 @@ Manifests:
       Install: 
         Script: |-
           pip3 install --user -r {artifacts:decompressedPath}/aws-greengrass-json-gzip/requirements.txt
-      Run: 
+      Run:
         Script: |-
-          python3 -u {artifacts:decompressedPath}/aws-greengrass-json-gzip/main.py "{configuration:/Processor/StreamName}" "{configuration:/Processor/BatchSize}" "{configuration:/Processor/Interval}" "{configuration:/Processor/Path}" "{configuration:/Uploader/BucketName}" "{configuration:/Uploader/Prefix}" "{configuration:/Uploader/Interval}" "{configuration:/Uploader/Path}" "{configuration:/LogLevel}"
+          python3 -u {artifacts:decompressedPath}/aws-greengrass-json-gzip/main.py \
+            --processor_stream_name "{configuration:/Processor/StreamName}" \
+            --processor_batch_size "{configuration:/Processor/BatchSize}" \
+            --processor_interval "{configuration:/Processor/Interval}" \
+            --processor_path "{configuration:/Processor/Path}" \
+            --uploader_bucket_name "{configuration:/Uploader/BucketName}" \
+            --uploader_prefix "{configuration:/Uploader/Prefix}" \
+            --uploader_interval "{configuration:/Uploader/Interval}" \
+            --uploader_path "{configuration:/Uploader/Path}" \
+            --log_level "{configuration:/LogLevel}"
