@@ -11,12 +11,12 @@ async def process_messages(logger: logging.Logger, config: ProcessorConfig):
         processor = None
         try:
             processor = BatchMessageProcessor(config, logger)
-            await processor.Run()
+            await processor.run()
         except Exception:
             logger.exception("Exception while running")
         finally:
             if processor is not None:
-                processor.Close()
+                processor.close()
         logger.info(
             "Something went wrong with message processing, wait a minute before trying again"
         )
@@ -28,12 +28,12 @@ async def upload_directory(logger: logging.Logger, config: UploaderConfig):
         uploader = None
         try:
             uploader = DirectoryUploader(config, logger)
-            await uploader.Run()
+            await uploader.run()
         except Exception:
             logger.exception("Exception while running")
         finally:
             if uploader is not None:
-                uploader.Close()
+                uploader.close()
         logger.info(
             "Something went wrong with directory uploading, wait a minute before trying again"
         )
