@@ -44,14 +44,14 @@ class TestBatchMessageProcessor(unittest.TestCase):
             loop = asyncio.get_event_loop()
 
             # Testing with some messages - output file should be created
-            loop.run_until_complete(bmp.Run(under_test=True))
+            loop.run_until_complete(bmp.run(under_test=True))
             self.assertTrue(
                 os.path.exists(os.path.join(tmpdirname, "batch_0.jsonl.gz"))
             )
 
             # Testing with zero messages - no new file should be created
             read_messages_mock.return_value = []
-            loop.run_until_complete(bmp.Run(under_test=True))
+            loop.run_until_complete(bmp.run(under_test=True))
             self.assertFalse(
                 os.path.exists(os.path.join(tmpdirname, "batch_1.jsonl.gz"))
             )

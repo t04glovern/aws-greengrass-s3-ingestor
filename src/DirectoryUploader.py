@@ -35,7 +35,7 @@ class UploaderConfig:
 
 
 class DirectoryUploader:
-    """DirectoryUploader monitors a folder for new files and upload those new files to S3 via stream manager"""
+    """DirectoryUploader monitors a folder for new files and upload those new files to S3 via stream manager."""
 
     def __init__(
         self,
@@ -43,158 +43,168 @@ class DirectoryUploader:
         logger: logging.Logger,
         client: StreamManagerClient = None,
     ):
-        self.__pathname = config.path
-        self.__bucket_name = config.bucket_name
-        self.__stream_name = config.bucket_name + "Stream"
-        self.__status_stream_name = self.__stream_name + "Status"
-        self.__client = client
-        self.__prefix = (
+        """Initialize DirectoryUploader."""
+
+        # Configuration parameters
+        self.pathname = config.path
+        self.bucket_name = config.bucket_name
+        self.stream_name = config.bucket_name + "Stream"
+        self.status_stream_name = self.stream_name + "Status"
+        self.client = client
+        self.prefix = (
             config.prefix if config.prefix.endswith("/") else config.prefix + "/"
         )
-        self.__logger = logger
-        self.__status_interval = min(config.interval, 1)
-        self.__interval = config.interval
-        self.__filesProcessed = set()
+        self.logger = logger
+        self.status_interval = min(config.interval, 1)
+        self.interval = config.interval
+        self.files_processed = set()
 
-        if self.__client == None:
-            self.__client = StreamManagerClient()
+        if self.client is None:
+            self.client = StreamManagerClient()
 
         logger.debug(f"DirectoryUploader initialized with {config}")
 
-        # Try deleting the stream and the status stream (if they exist) so that we have a fresh start
-        # The impact of deleting the streams on startup is that:
-        #   - Files might have been queued and their transfer will be cancelled. This is not a problem, the
-        #     files will be queued again.
-        #   - Acknoledgment of file transfert will be missed. The file in question will be transferred again.
+        # Delete existing streams (if any) for a fresh start.
+        self._delete_existing_streams()
+
+        # Create new streams for this session.
+        self._create_streams()
+
+    def _delete_existing_streams(self):
+        """Delete existing streams if they exist."""
+
+        # Delete the status stream for a fresh start.
         try:
-            self.__client.delete_message_stream(stream_name=self.__status_stream_name)
+            self.client.delete_message_stream(stream_name=self.status_stream_name)
         except ResourceNotFoundException:
             pass
 
-        # Try deleting the stream (if it exists) so that we have a fresh start
+        # Delete the main stream for a fresh start.
         try:
-            self.__client.delete_message_stream(stream_name=self.__stream_name)
+            self.client.delete_message_stream(stream_name=self.stream_name)
         except ResourceNotFoundException:
             pass
 
+    def _create_streams(self):
+        """Create new streams for the current session."""
+
+        # Prepare an export definition.
         exports = ExportDefinition(
             s3_task_executor=[
                 S3ExportTaskExecutorConfig(
-                    identifier="S3TaskExecutor" + self.__stream_name,  # Required
-                    # Optional. Add an export status stream to add statuses for all S3 upload tasks.
+                    identifier="S3TaskExecutor" + self.stream_name,  # Required
                     status_config=StatusConfig(
-                        # Default is INFO level statuses.
                         status_level=StatusLevel.INFO,
-                        # Status Stream should be created before specifying in S3 Export Config.
-                        status_stream_name=self.__status_stream_name,
+                        status_stream_name=self.status_stream_name,
                     ),
                 )
             ]
         )
 
         # Create the Status Stream.
-        self.__client.create_message_stream(
+        self.client.create_message_stream(
             MessageStreamDefinition(
-                name=self.__status_stream_name,
+                name=self.status_stream_name,
                 strategy_on_full=StrategyOnFull.OverwriteOldestData,
             )
         )
 
         # Create the message stream with the S3 Export definition.
-        self.__client.create_message_stream(
+        self.client.create_message_stream(
             MessageStreamDefinition(
-                name=self.__stream_name,
+                name=self.stream_name,
                 strategy_on_full=StrategyOnFull.OverwriteOldestData,
                 export_definition=exports,
             )
         )
 
-    async def __scan(self, under_test=False):
+    async def _scan(self, under_test=False):
+        """Scan the directory for new files and upload them."""
+
         keep_looping = True
         while keep_looping:
             try:
-                base_dir = os.path.dirname(self.__pathname)
+                # Check if the directory exists and has appropriate permissions.
+                base_dir = os.path.dirname(self.pathname)
                 if ntpath.isdir(base_dir) and os.access(
                     base_dir, os.R_OK | os.W_OK | os.X_OK
                 ):
-                    self.__logger.debug(
-                        f"Scanning folder {self.__pathname} for change ===="
+                    self.logger.debug(
+                        f"Scanning directory {self.pathname} for changes."
                     )
-                    files = glob.glob(self.__pathname)
-                    files.sort(key=os.path.getmtime)
-                    if len(files) > 0:
-                        # remove most recent file as it is considerred the active file
-                        self.__logger.debug(
-                            f"The current active file is : {files.pop()}"
-                        )
-                    fileset = set(files) - self.__filesProcessed
 
-                    if len(fileset) == 0:
-                        self.__logger.debug("No new files to transfer")
+                    # Get all files sorted by modified time.
+                    files = sorted(glob.glob(self.pathname), key=os.path.getmtime)
+                    if files:
+                        # Remove most recent file as it is considered the active file
+                        self.logger.debug(f"The current active file is: {files.pop()}")
 
-                    for file in fileset:
-                        # Append a S3 Task definition and print the sequence number
-                        head, tail = ntpath.split(file)
+                    # Identify new files.
+                    new_files = set(files) - self.files_processed
 
-                        # Adding timestamp placeholders to the key for partitioning
-                        key_with_partition = (
-                            self.__prefix
-                            + "year=!{timestamp:YYYY}/month=!{timestamp:MM}/day=!{timestamp:dd}/hour=!{timestamp:HH}/"
-                            + tail
-                        )
+                    if not new_files:
+                        self.logger.debug("No new files to transfer.")
 
-                        s3_export_task_definition = S3ExportTaskDefinition(
-                            input_url="file://" + file,
-                            bucket=self.__bucket_name,
-                            key=key_with_partition,
-                        )
+                    # Process each new file.
+                    for file in new_files:
+                        await self._append_s3_task(file)
 
-                        payload = None
-                        try:
-                            payload = Util.validate_and_serialize_to_json_bytes(
-                                s3_export_task_definition
-                            )
-                        except ValidationException:
-                            # if validation failed, file will not be sent to S3 and we will not retry until
-                            # component is re-started
-                            self.__logger.warning(
-                                f"Validation failed for file: {file},"
-                                + f" bucket: {self.__bucket_name}, key: {key_with_partition}. File not sent to S3"
-                            )
+                    # Update the list of processed files.
+                    self.files_processed = set(files)
 
-                        if payload != None:
-                            self.__logger.info(
-                                "Successfully appended S3 Task Definition to stream with sequence number %d",
-                                self.__client.append_message(
-                                    self.__stream_name, payload
-                                ),
-                            )
-                    # we could compute the new self.__filesProcessed as self.__filesProcessed.union(fileset)
-                    # but that would mean an ever growing set
-                    # instead we compute it as set(files) which is the list of files at the begining of this iteration
-                    # minus the current active file
-                    self.__filesProcessed = set(files)
-                    await asyncio.sleep(self.__interval)
+                    await asyncio.sleep(self.interval)
                 else:
-                    self.__logger.error(
-                        f"The path {base_dir} is not a directory, does not exists or greengrass user doesn't have sufficient (rwx) access."
+                    self.logger.error(
+                        f"The path {base_dir} is not a directory, does not exist or doesn't have sufficient (rwx) access."
                     )
-                    # let wait 1 minute before retrying
                     if not under_test:
                         await asyncio.sleep(60)
             except Exception:
-                self.__logger.exception("Exception while scanning folder")
+                self.logger.exception("Exception while scanning directory")
             keep_looping = not under_test
 
-    async def __processStatus(self, under_test=False):
+    async def _append_s3_task(self, file):
+        """Append a S3 Task definition to the stream and log the sequence number."""
+
+        # Prepare the S3 Task definition.
+        head, tail = ntpath.split(file)
+        key_with_partition = f"{self.prefix}year=!{{timestamp:YYYY}}/month=!{{timestamp:MM}}/day=!{{timestamp:dd}}/hour=!{{timestamp:HH}}/{tail}"
+        s3_export_task_definition = S3ExportTaskDefinition(
+            input_url=f"file://{file}",
+            bucket=self.bucket_name,
+            key=key_with_partition,
+        )
+
+        # Validate and serialize the S3 Task definition.
+        try:
+            payload = Util.validate_and_serialize_to_json_bytes(
+                s3_export_task_definition
+            )
+        except ValidationException:
+            self.logger.warning(
+                f"Validation failed for file: {file}, bucket: {self.bucket_name}, key: {key_with_partition}. File not sent to S3."
+            )
+            return
+
+        # Append the S3 Task definition to the stream.
+        if payload is not None:
+            sequence_number = self.client.append_message(self.stream_name, payload)
+            self.logger.info(
+                f"Successfully appended S3 Task Definition to stream with sequence number {sequence_number}."
+            )
+
+    async def _process_status(self, under_test=False):
         """Read the statuses from the export status stream."""
+
         next_seq = 0
         keep_looping = True
         while keep_looping:
             try:
-                self.__logger.debug("Reading messages from status stream")
-                messages_list = self.__client.read_messages(
-                    self.__status_stream_name,
+                self.logger.debug("Reading messages from status stream.")
+
+                # Read messages from the status stream.
+                messages_list = self.client.read_messages(
+                    self.status_stream_name,
                     ReadMessagesOptions(
                         desired_start_sequence_number=next_seq,
                         min_message_count=1,
@@ -202,59 +212,55 @@ class DirectoryUploader:
                         read_timeout_millis=1000,
                     ),
                 )
+
+                # Process each message.
                 for message in messages_list:
-                    # Deserialize the status message first.
+                    if message.sequence_number is not None:
+                        next_seq = message.sequence_number + 1
                     status_message = Util.deserialize_json_bytes_to_obj(
                         message.payload, StatusMessage
                     )
-                    file_url = (
-                        status_message.status_context.s3_export_task_definition.input_url
-                    )
+                    self._handle_status_message(status_message)
 
-                    # Check the status of the status message. If the status is "Success",
-                    # the file was successfully uploaded to S3.
-                    # If the status was either "Failure" or "Cancelled", the server was unable to upload
-                    # the file to S3. We will print the message for why the upload to S3 failed from the
-                    # status message. If the status was "InProgress", the status indicates that the server
-                    # has started uploading the S3 task.
-                    if status_message.status == Status.Success:
-                        self.__logger.info(
-                            f"Successfully uploaded file at path {file_url} to S3."
-                        )
-                        p = urlparse(file_url)
-                        final_path = os.path.abspath(os.path.join(p.netloc, p.path))
-                        # on linux removing a file that is in use will succeed. On windows it will generate
-                        # an exception
-                        os.remove(final_path)
-                    elif status_message.status == Status.InProgress:
-                        self.__logger.info("File upload is in Progress.")
-                    elif (
-                        status_message.status == Status.Failure
-                        or status_message.status == Status.Canceled
-                    ):
-                        self.__logger.error(
-                            f"Unable to upload file at path {file_url} to S3. Message: {status_message.message}"
-                        )
-
-                        # remove the file from the list of files already processed and let it be tried again.
-                        self.__filesProcessed.remove(file_url.partition("file://")[2])
-
-                    next_seq = message.sequence_number + 1
             except NotEnoughMessagesException:
-                # ingore this exception, it doesn't mean something went wrong.
+                # Ignore this exception, as it doesn't indicate an error.
                 pass
             except Exception:
-                self.__logger.exception("Exception while processing status")
-            self.__logger.debug(f"Sleeping for {self.__status_interval} seconds")
-            await asyncio.sleep(self.__status_interval)
+                self.logger.exception("Exception while processing status")
+            self.logger.debug(f"Sleeping for {self.status_interval} seconds")
+            await asyncio.sleep(self.status_interval)
             keep_looping = not under_test
 
-    async def Run(self):
+    def _handle_status_message(self, status_message):
+        """Handle a status message."""
+
+        file_url = status_message.status_context.s3_export_task_definition.input_url
+
+        # Check the status of the status message.
+        if status_message.status == Status.Success:
+            self.logger.info(f"Successfully uploaded file at path {file_url} to S3.")
+            final_path = os.path.abspath(
+                os.path.join(urlparse(file_url).netloc, urlparse(file_url).path)
+            )
+            os.remove(final_path)
+        elif status_message.status == Status.InProgress:
+            self.logger.info("File upload is in progress.")
+        elif status_message.status in [Status.Failure, Status.Canceled]:
+            self.logger.error(
+                f"Unable to upload file at path {file_url} to S3. Message: {status_message.message}"
+            )
+            self.files_processed.remove(file_url.partition("file://")[2])
+
+    async def run(self):
+        """Run the DirectoryUploader."""
+
         tasks = [
-            asyncio.create_task(self.__scan()),
-            asyncio.create_task(self.__processStatus()),
+            asyncio.create_task(self._scan()),
+            asyncio.create_task(self._process_status()),
         ]
         await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED)
 
-    def Close(self):
-        self.__client.close()
+    def close(self):
+        """Close the DirectoryUploader."""
+
+        self.client.close()
