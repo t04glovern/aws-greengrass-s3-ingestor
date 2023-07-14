@@ -34,20 +34,20 @@ class TestDirectoryUploader(unittest.TestCase):
         )
         du = DirectoryUploader(config, logger, client=mock_client)
         loop = asyncio.get_event_loop()
-        loop.run_until_complete(du._DirectoryUploader__scan(under_test=True))
+        loop.run_until_complete(du._scan(under_test=True))
         mock_client.assert_not_called()
         f = open(tmpdir + "/test1.csv", "a")
         f.write("test file 1!")
         f.close()
-        loop.run_until_complete(du._DirectoryUploader__scan(under_test=True))
+        loop.run_until_complete(du._scan(under_test=True))
         mock_client.assert_not_called()
         f = open(tmpdir + "/test2.csv", "a")
         f.write("test file 2!")
         f.close()
-        loop.run_until_complete(du._DirectoryUploader__scan(under_test=True))
+        loop.run_until_complete(du._scan(under_test=True))
         append_mock.assert_called()
 
-    def test_ProcessStatus(self):
+    def test_process_status(self):
         tmpdir = tempfile.mkdtemp()
         filename = tmpdir + "/test1.csv"
         f = open(filename, "a")
@@ -83,7 +83,7 @@ class TestDirectoryUploader(unittest.TestCase):
         du = DirectoryUploader(config, logger, client=mock_client)
         loop = asyncio.get_event_loop()
 
-        loop.run_until_complete(du._DirectoryUploader__processStatus(under_test=True))
+        loop.run_until_complete(du._process_status(under_test=True))
         self.assertTrue(os.path.exists(filename))
 
         status_message.status = Status.Success
@@ -92,10 +92,10 @@ class TestDirectoryUploader(unittest.TestCase):
         message_list = [test_message]
         read_messages_mock.return_value = message_list
 
-        loop.run_until_complete(du._DirectoryUploader__processStatus(under_test=True))
+        loop.run_until_complete(du._process_status(under_test=True))
         self.assertFalse(os.path.exists(filename))
 
-    def test_scan_dirnotexist(self):
+    def test_scan_dir_not_exist(self):
         fakedir = "/does/not/exists/*.cvs"
         mock_client = unittest.mock.MagicMock()
         append_mock = unittest.mock.MagicMock()
@@ -111,13 +111,11 @@ class TestDirectoryUploader(unittest.TestCase):
         )
         du = DirectoryUploader(config, logger=mock_logger, client=mock_client)
         loop = asyncio.get_event_loop()
-        loop.run_until_complete(du._DirectoryUploader__scan(under_test=True))
+        loop.run_until_complete(du._scan(under_test=True))
         mock_client.assert_not_called()
         mock_error.assert_called_once()
 
-    def test_wrongpath(self):
-        # testing what happens if the wildchar is not in the file name.
-        # this should get caught as an invalid directory
+    def test_wrong_path(self):
         tmpdir = tempfile.mkdtemp()
         testdir = tmpdir + "/testdir"
         os.mkdir(testdir)
@@ -142,7 +140,7 @@ class TestDirectoryUploader(unittest.TestCase):
         )
         du = DirectoryUploader(config, logger=mock_logger, client=mock_client)
         loop = asyncio.get_event_loop()
-        loop.run_until_complete(du._DirectoryUploader__scan(under_test=True))
+        loop.run_until_complete(du._scan(under_test=True))
         mock_client.assert_not_called()
         mock_error.assert_called_once()
 

@@ -1,0 +1,85 @@
+---
+    name: Unit Tests
+    on:
+      push:
+        branches:
+          - main
+        paths:
+          - "src/**"
+          - "tests/**"
+          - .github/workflows/unit-tests.yaml
+      pull_request:
+        paths:
+          - "src/**"
+          - "tests/**"
+          - .github/workflows/unit-tests.yaml
+    
+    permissions:
+      contents: read
+      pull-requests: write
+    
+    jobs:
+      unit-testing:
+        name: Unit Testing
+        runs-on: ubuntu-latest
+        steps:
+          - name: Checkout repo
+            uses: actions/checkout@v3
+    
+          - uses: actions/setup-python@v4
+            with:
+              python-version: '3.11'
+    
+          - name: Install Dependencies
+            run: pip install -r requirements-dev.txt
+    
+          - name: Run PyTest
+            run: pytest --cov-report=xml:coverage.xml --cov=src
+    
+          - name: Code Coverage Summary Report
+            uses: irongut/CodeCoverageSummary@v1.3.0
+            with:
+              filename: "**/coverage.xml"
+              badge: true
+              fail_below_min: false
+              format: markdown
+              hide_branch_rate: true
+              hide_complexity: false
+              indicators: true
+              output: both
+              thresholds: '75 85'
+    
+          - name: Add Coverage PR Comment
+            uses: actions/github-script@v6
+            if: github.event_name == 'pull_request'
+            with:
+              github-token: ${{ secrets.GITHUB_TOKEN }}
+              script: |
+                const fs = require('fs')
+                // 1. Retrieve existing bot comments for the PR
+                const { data: comments } = await github.rest.issues.listComments({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: context.issue.number,
+                })
+                const botComment = comments.find(comment => {
+                  return comment.user.type === 'Bot' && comment.body.includes('Package | Line Rate | Complexity | Health')
+                })
+                // 2. Prepare format of the comment
+                const coverageSummary = fs.readFileSync('./code-coverage-results.md', { encoding: 'utf-8', flag: 'r' })
+                // 3. If we have a comment, update it, otherwise create a new one
+                if (botComment) {
+                  github.rest.issues.updateComment({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    comment_id: botComment.id,
+                    body: coverageSummary
+                  })
+                } else {
+                  github.rest.issues.createComment({
+                    issue_number: context.issue.number,
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    body: coverageSummary
+                  })
+                }
