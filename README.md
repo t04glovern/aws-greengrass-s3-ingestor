@@ -86,27 +86,66 @@ Below is an example of how data landed in S3 after being uploaded by this compon
 
 ```sql
 CREATE EXTERNAL TABLE IF NOT EXISTS greengrass_data (
-    `id` string,
-    `timestamp` timestamp,
-    `speed` int,
-    `temperature` float,
-    `location` struct<lat:float, lng:float>
+  `id` string,
+  `timestamp` timestamp,
+  `speed` int,
+  `temperature` float,
+  `location` struct<lat:float, lng:float>
 )
-PARTITIONED BY (`year` string, `month` string, `day` string, `hour` string)
 ROW FORMAT SERDE 'org.apache.hive.hcatalog.data.JsonSerDe'
 WITH SERDEPROPERTIES ( "timestamp.formats"="yyyy-MM-dd'T'HH:mm:ss.SSSSSSZZ" )
 LOCATION 's3://batch-uploader-robocat-greengrass-landing/robocat/'
+TBLPROPERTIES (
+  "projection.enabled" = "true", 
+  "projection.year.type"="integer", 
+  "projection.year.range"="2023,2033", 
+  "projection.month.type"="integer", 
+  "projection.month.range"="1,12", 
+  "projection.day.type"="integer", 
+  "projection.day.range"="1,31", 
+  "projection.hour.type"="integer", 
+  "projection.hour.range"="0,23",
+  "storage.location.template"="s3://batch-uploader-robocat-greengrass-landing/robocat/year=${year}/month=${month}/day=${day}/hour=${hour}"
+);
 ```
 
 Then we can query the data in its raw form:
 
 ```sql
--- Required to load new partitions if new data has been uploaded
-MSCK REPAIR TABLE `greengrass_data`;
 SELECT * FROM "greengrass_data" limit 10;
 ```
 
-![Athena Query](img/athena-query-example.png)
+![Athena Query](img/athena-query-example-01.png)
+
+You can also use the following If you don't know the schema of the data:
+
+```sql
+CREATE EXTERNAL TABLE IF NOT EXISTS greengrass_json_data (
+  jsonstring string
+)
+ROW FORMAT SERDE 'org.apache.hadoop.hive.serde2.RegexSerDe'
+WITH SERDEPROPERTIES (
+  "input.regex" = "^(.*)$",
+  "projection.enabled" = "true", 
+  "projection.year.type"="integer", 
+  "projection.year.range"="2023,2033", 
+  "projection.month.type"="integer", 
+  "projection.month.range"="1,12", 
+  "projection.day.type"="integer", 
+  "projection.day.range"="1,31", 
+  "projection.hour.type"="integer", 
+  "projection.hour.range"="0,23",
+  "storage.location.template"="s3://batch-uploader-robocat-greengrass-landing/robocat/year=${year}/month=${month}/day=${day}/hour=${hour}"
+) LOCATION 's3://batch-uploader-robocat-greengrass-landing/robocat/';
+```
+
+Then you can query the data using the following:
+
+```sql
+SELECT * FROM "greengrass_json_data" limit 10;
+```
+
+![Athena Query](img/athena-query-example-02.png)
 
 This is a very simple example, but it shows how easy it is to query the data in S3. There is a lot more that can be done such as processing the landed data into Apache Iceberg, which is another data lake engine that removes the need for dealing with partitions along with some other fancy features. This is something not covered in this example, but I will be presenting the solution at [DataEngBytes Perth](https://dataengconf.com.au/) on the 22nd of August 2023.
 
