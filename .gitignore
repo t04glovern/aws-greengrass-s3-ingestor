@@ -10,3 +10,10 @@ build
 *.eggs
 *venv
 *vscode
+
+# GDK Build
+zip-build
+greengrass-build
+testResults
+cucumber.json
+TEST-greengrass-results.xml
