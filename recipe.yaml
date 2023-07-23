@@ -12,13 +12,13 @@ ComponentConfiguration:
   DefaultConfiguration:
     Processor:
       StreamName: "BatchMessageStream"
-      BatchSize: "100"
-      Interval: "10"
+      BatchSize: "20"
+      Interval: "30"
       Path: "/tmp/greengrass/gzip"
     Uploader:
-      BucketName: "batch-uploader-robocat-greengrass-landing"
-      Prefix: "robocat"
-      Interval: "10"
+      BucketName: "my-bucket"
+      Prefix: "sample-devices"
+      Interval: "1"
       Path: "/tmp/greengrass/gzip/*"
     LogLevel: "INFO"
 Manifests:

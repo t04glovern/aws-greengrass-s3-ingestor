@@ -17,3 +17,4 @@ greengrass-build
 testResults
 cucumber.json
 TEST-greengrass-results.xml
+gg-e2e-tests/target

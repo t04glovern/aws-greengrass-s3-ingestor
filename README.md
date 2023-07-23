@@ -222,6 +222,8 @@ pytest
 
 ```bash
 gdk component build
+gdk test-e2e build
+gdk test-e2e run
 gdk component publish
 ```
 
