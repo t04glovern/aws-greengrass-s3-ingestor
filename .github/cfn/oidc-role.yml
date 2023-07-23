@@ -1,0 +1,65 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: 'GitHub OIDC: t04glovern/aws-greengrass-json-gzip | Stack: oidc-t04glovern-aws-greengrass-json-gzip'
+
+Parameters:
+  FullRepoName:
+    Type: String
+    Default: t04glovern/aws-greengrass-json-gzip
+  GreengrassComponentName:
+    Type: String
+    Default: com.devopstar.json.gzip
+
+Resources:
+  Role:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: oidc-t04glovern-aws-greengrass-json-gzip
+      Policies:
+        - PolicyName: s3-greengrass-bucket
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:CreateBucket
+                  - s3:GetBucketLocation
+                  - s3:ListBucket
+                Resource:
+                  - !Sub arn:${AWS::Partition}:s3:::greengrass-component-artifacts-${AWS::Region}-${AWS::AccountId}
+        - PolicyName: s3-greengrass-components
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:GetObject
+                  - s3:PutObject
+                Resource:
+                  - !Sub arn:${AWS::Partition}:s3:::greengrass-component-artifacts-${AWS::Region}-${AWS::AccountId}/${GreengrassComponentName}*
+        - PolicyName: greengrass-components
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - greengrass:CreateComponentVersion
+                  - greengrass:ListComponentVersions
+                Resource:
+                  - !Sub arn:${AWS::Partition}:greengrass:${AWS::Region}:${AWS::AccountId}:components:${GreengrassComponentName}*
+      AssumeRolePolicyDocument:
+        Statement:
+          - Effect: Allow
+            Action: sts:AssumeRoleWithWebIdentity
+            Principal:
+              Federated: !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:oidc-provider/token.actions.githubusercontent.com
+            Condition:
+              StringLike:
+                token.actions.githubusercontent.com:sub: !Sub repo:${FullRepoName}:*
+
+Outputs:
+  OidcRoleAwsAccountId:
+    Value: !Ref AWS::AccountId
+  OidcRoleAwsRegion:
+    Value: !Ref AWS::Region
+  OidcRoleAwsRoleToAssume:
+    Value: !GetAtt Role.Arn
