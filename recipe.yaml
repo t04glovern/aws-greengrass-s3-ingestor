@@ -16,8 +16,8 @@ ComponentConfiguration:
       Interval: "30"
       Path: "/tmp/greengrass/gzip"
     Uploader:
-      BucketName: "<PLACEHOLDER BUCKET HERE>"
-      Prefix: ""
+      BucketName: "my-bucket"
+      Prefix: "sample-devices"
       Interval: "1"
       Path: "/tmp/greengrass/gzip/*"
     LogLevel: "INFO"

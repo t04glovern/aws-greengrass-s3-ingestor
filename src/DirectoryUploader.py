@@ -235,10 +235,12 @@ class DirectoryUploader:
         """Handle a status message."""
 
         file_url = status_message.status_context.s3_export_task_definition.input_url
+        bucket = status_message.status_context.s3_export_task_definition.bucket
+        key = status_message.status_context.s3_export_task_definition.key
 
         # Check the status of the status message.
         if status_message.status == Status.Success:
-            self.logger.info(f"Successfully uploaded file at path {file_url} to S3.")
+            self.logger.info(f"Successfully uploaded file at path {file_url} to s3://{bucket}/{key}")
             final_path = os.path.abspath(
                 os.path.join(urlparse(file_url).netloc, urlparse(file_url).path)
             )
