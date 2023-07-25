@@ -9,7 +9,7 @@ on:
 env:
   GREENGRASS_COMPONENT_NAME: com.devopstar.json.gzip
   GREENGRASS_REGION: ap-southeast-2
-  GREENGRASS_DEV_KIT_VERSION: v1.2.3
+  GREENGRASS_DEV_KIT_VERSION: v1.3.0
 
 jobs:
   publish:
