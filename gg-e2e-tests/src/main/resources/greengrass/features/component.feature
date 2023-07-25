@@ -10,7 +10,6 @@ Feature: Testing features of Greengrassv2 GDK_COMPONENT_NAME
         And I create a Greengrass deployment with components
             | GDK_COMPONENT_NAME           | GDK_COMPONENT_RECIPE_FILE |
             | com.devopstar.Robocat        | LATEST                    |
-            | aws.greengrass.StreamManager | ^2.0.0                    |
         And I update my Greengrass deployment configuration, setting the component GDK_COMPONENT_NAME configuration to:
             """
             {
@@ -27,7 +26,7 @@ Feature: Testing features of Greengrassv2 GDK_COMPONENT_NAME
                         "Interval": "1",
                         "Path": "/tmp/greengrass/gzip/*"
                     },
-                    "LogLevel": "DEBUG"
+                    "LogLevel": "INFO"
                 }
             }
             """
