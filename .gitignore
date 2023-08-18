@@ -12,8 +12,7 @@ build
 *vscode
 
 # GDK Build
-zip-build
-greengrass-build
+bundle.zip
 testResults
 cucumber.json
 TEST-greengrass-results.xml

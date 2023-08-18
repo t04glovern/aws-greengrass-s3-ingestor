@@ -25,15 +25,14 @@ Manifests:
   - Platform:
       os: linux
     Artifacts:
-      - URI: "s3://BUCKET_NAME/COMPONENT_NAME/COMPONENT_VERSION/aws-greengrass-json-gzip.zip"
+      - URI: "s3://BUCKET_NAME/COMPONENT_NAME/COMPONENT_VERSION/bundle.zip"
         Unarchive: ZIP
     Lifecycle:
-      Install: 
-        Script: |-
-          pip3 install --user -r {artifacts:decompressedPath}/aws-greengrass-json-gzip/requirements.txt
       Run:
+        Setenv:
+          PYTHONPATH: {artifacts:decompressedPath}
         Script: |-
-          python3 -u {artifacts:decompressedPath}/aws-greengrass-json-gzip/main.py \
+          python3 -u {artifacts:decompressedPath}/main.py \
             --processor_stream_name "{configuration:/Processor/StreamName}" \
             --processor_batch_size "{configuration:/Processor/BatchSize}" \
             --processor_interval "{configuration:/Processor/Interval}" \
