@@ -30,9 +30,9 @@ Manifests:
     Lifecycle:
       Run:
         Setenv:
-          PYTHONPATH: "{artifacts:decompressedPath}"
+          PYTHONPATH: "{artifacts:decompressedPath}/bundle"
         Script: |-
-          python3 -u {artifacts:decompressedPath}/main.py \
+          python3 -u {artifacts:decompressedPath}/bundle/main.py \
             --processor_stream_name "{configuration:/Processor/StreamName}" \
             --processor_batch_size "{configuration:/Processor/BatchSize}" \
             --processor_interval "{configuration:/Processor/Interval}" \
