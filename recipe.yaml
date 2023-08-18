@@ -30,7 +30,7 @@ Manifests:
     Lifecycle:
       Run:
         Setenv:
-          PYTHONPATH: {artifacts:decompressedPath}
+          PYTHONPATH: "{artifacts:decompressedPath}"
         Script: |-
           python3 -u {artifacts:decompressedPath}/main.py \
             --processor_stream_name "{configuration:/Processor/StreamName}" \
