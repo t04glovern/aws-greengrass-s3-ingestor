@@ -86,33 +86,48 @@ Below is an example of how data landed in S3 after being uploaded by this compon
 
 ```sql
 CREATE EXTERNAL TABLE IF NOT EXISTS greengrass_data (
-  `id` string,
-  `timestamp` timestamp,
-  `speed` int,
-  `temperature` float,
-  `location` struct<lat:float, lng:float>
+    `id` string,
+    `timestamp` timestamp,
+    `speed` int,
+    `temperature` float,
+    `location` struct < lat: float,
+    lng: float >
+)
+PARTITIONED BY (
+    year int,
+    month int,
+    day int,
+    hour int
 )
 ROW FORMAT SERDE 'org.apache.hive.hcatalog.data.JsonSerDe'
 WITH SERDEPROPERTIES ( "timestamp.formats"="yyyy-MM-dd'T'HH:mm:ss.SSSSSSZZ" )
 LOCATION 's3://batch-uploader-robocat-greengrass-landing/robocat/'
 TBLPROPERTIES (
-  "projection.enabled" = "true", 
-  "projection.year.type"="integer", 
-  "projection.year.range"="2023,2033", 
-  "projection.month.type"="integer", 
-  "projection.month.range"="1,12", 
-  "projection.day.type"="integer", 
-  "projection.day.range"="1,31", 
-  "projection.hour.type"="integer", 
-  "projection.hour.range"="0,23",
-  "storage.location.template"="s3://batch-uploader-robocat-greengrass-landing/robocat/year=${year}/month=${month}/day=${day}/hour=${hour}"
+    "projection.enabled" = "true",
+    "projection.year.type" = "integer",
+    "projection.year.range" = "2023,2033",
+    "projection.month.type" = "integer",
+    "projection.month.range" = "1,12",
+    "projection.month.digits" = "2",
+    "projection.day.type" = "integer",
+    "projection.day.range" = "1,31",
+    "projection.day.digits" = "2",
+    "projection.hour.type" = "integer",
+    "projection.hour.range" = "0,23",
+    "projection.hour.digits" = "2",
+    "storage.location.template" = "s3://batch-uploader-robocat-greengrass-landing/robocat/year=${year}/month=${month}/day=${day}/hour=${hour}"
 );
 ```
 
 Then we can query the data in its raw form:
 
 ```sql
-SELECT * FROM "greengrass_data" limit 10;
+SELECT *
+FROM "greengrass_data"
+WHERE year = 2023
+    AND month = 7
+    AND day = 12
+    AND hour = 14
 ```
 
 ![Athena Query](img/athena-query-example-01.png)
@@ -126,15 +141,18 @@ CREATE EXTERNAL TABLE IF NOT EXISTS greengrass_json_data (
 ROW FORMAT SERDE 'org.apache.hadoop.hive.serde2.RegexSerDe'
 WITH SERDEPROPERTIES (
   "input.regex" = "^(.*)$",
-  "projection.enabled" = "true", 
-  "projection.year.type"="integer", 
-  "projection.year.range"="2023,2033", 
-  "projection.month.type"="integer", 
-  "projection.month.range"="1,12", 
-  "projection.day.type"="integer", 
-  "projection.day.range"="1,31", 
-  "projection.hour.type"="integer", 
-  "projection.hour.range"="0,23",
+  "projection.enabled" = "true",
+  "projection.year.type" = "integer",
+  "projection.year.range" = "2023,2033",
+  "projection.month.type" = "integer",
+  "projection.month.range" = "1,12",
+  "projection.month.digits" = "2",
+  "projection.day.type" = "integer",
+  "projection.day.range" = "1,31",
+  "projection.day.digits" = "2",
+  "projection.hour.type" = "integer",
+  "projection.hour.range" = "0,23",
+  "projection.hour.digits" = "2",
   "storage.location.template"="s3://batch-uploader-robocat-greengrass-landing/robocat/year=${year}/month=${month}/day=${day}/hour=${hour}"
 ) LOCATION 's3://batch-uploader-robocat-greengrass-landing/robocat/';
 ```
@@ -142,7 +160,7 @@ WITH SERDEPROPERTIES (
 Then you can query the data using the following:
 
 ```sql
-SELECT * FROM "greengrass_json_data" limit 10;
+SELECT * FROM "greengrass_json_data" limit 10
 ```
 
 ![Athena Query](img/athena-query-example-02.png)
@@ -231,5 +249,5 @@ gdk component publish
 
 - [ ] August 2023 | Generalize the component to allow for different input and output formats. Right now this component only supports JSONL input and gzip output. I plan to rename this component to `greengrass-batch-to-s3 - com.devopstar.batch.to.s3` once I've confirmed that multiple inputs and outputs are feasible and worth doing. An example of an output format that I would like to support is Parquet.
 - [ ] August 2023 | Remove the need for specifying the Path and Interval twice. Right now the Path and Interval are specified in the Processor and Uploader sections of the configuration. I would like to remove the need for this duplication.
-- [ ] August 2023 | CI/CD pipeline for automated deployment of the component versions to my AWS account.
-- [ ] September 2023 | Integrate [AWS Greengrass test framework](https://github.com/aws-greengrass/aws-greengrass-testing) into the CI/CD pipeline.
+- [X] August 2023 | CI/CD pipeline for automated deployment of the component versions to my AWS account.
+- [X] September 2023 | Integrate [AWS Greengrass test framework](https://github.com/aws-greengrass/aws-greengrass-testing) into the CI/CD pipeline.

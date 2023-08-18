@@ -10,7 +10,7 @@
   <name>OTF</name>
   
   <properties>
-    <otf.version>1.1.0-SNAPSHOT</otf.version>
+    <otf.version>1.2.0-SNAPSHOT</otf.version>
     <maven.compiler.source>1.8</maven.compiler.source>
     <maven.compiler.target>1.8</maven.compiler.target>
   </properties>
