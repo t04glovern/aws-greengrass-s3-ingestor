@@ -4,6 +4,7 @@ import logging
 import json
 import os
 
+from datetime import datetime
 from dataclasses import dataclass
 
 from stream_manager import (
@@ -123,7 +124,8 @@ class BatchMessageProcessor:
         """Writes valid messages into a gzip file."""
 
         os.makedirs(self.output_folder, exist_ok=True)
-        file_path = os.path.join(self.output_folder, f"batch_{self.batch_id}.jsonl.gz")
+        date_str = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        file_path = os.path.join(self.output_folder, f"{date_str}_{self.batch_id}.jsonl.gz")
 
         with gzip.open(file_path, "wt") as f:
             for message in valid_messages:

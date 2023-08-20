@@ -10,16 +10,14 @@ ComponentDependencies:
     DependencyType: HARD
 ComponentConfiguration:
   DefaultConfiguration:
+    Path: "/tmp/greengrass/gzip"
+    Interval: "30"
     Processor:
       StreamName: "BatchMessageStream"
-      BatchSize: "20"
-      Interval: "30"
-      Path: "/tmp/greengrass/gzip"
+      BatchSize: "200"
     Uploader:
       BucketName: "my-bucket"
       Prefix: "sample-devices"
-      Interval: "1"
-      Path: "/tmp/greengrass/gzip/*"
     LogLevel: "INFO"
 Manifests:
   - Platform:
@@ -33,12 +31,10 @@ Manifests:
           PYTHONPATH: "{artifacts:decompressedPath}/bundle"
         Script: |-
           python3 -u {artifacts:decompressedPath}/bundle/main.py \
+            --path "{configuration:/Path}" \
+            --interval "{configuration:/Interval}" \
             --processor_stream_name "{configuration:/Processor/StreamName}" \
             --processor_batch_size "{configuration:/Processor/BatchSize}" \
-            --processor_interval "{configuration:/Processor/Interval}" \
-            --processor_path "{configuration:/Processor/Path}" \
             --uploader_bucket_name "{configuration:/Uploader/BucketName}" \
             --uploader_prefix "{configuration:/Uploader/Prefix}" \
-            --uploader_interval "{configuration:/Uploader/Interval}" \
-            --uploader_path "{configuration:/Uploader/Path}" \
             --log_level "{configuration:/LogLevel}"
