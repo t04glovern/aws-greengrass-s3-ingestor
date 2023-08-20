@@ -53,14 +53,13 @@ async def main(
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
+    parser.add_argument("--path")
+    parser.add_argument("--pattern", default="*")
+    parser.add_argument("--interval", type=int)
     parser.add_argument("--processor_stream_name")
     parser.add_argument("--processor_batch_size", type=int)
-    parser.add_argument("--processor_interval", type=int)
-    parser.add_argument("--processor_path")
     parser.add_argument("--uploader_bucket_name")
     parser.add_argument("--uploader_prefix")
-    parser.add_argument("--uploader_interval", type=int)
-    parser.add_argument("--uploader_path")
     parser.add_argument("--log_level")
 
     args = parser.parse_args()
@@ -68,15 +67,15 @@ if __name__ == "__main__":
     processor_config = ProcessorConfig(
         stream_name=args.processor_stream_name,
         batch_size=args.processor_batch_size,
-        interval=args.processor_interval,
-        path=args.processor_path,
+        interval=args.interval,
+        path=args.path,
     )
 
     uploader_config = UploaderConfig(
         bucket_name=args.uploader_bucket_name,
         prefix=args.uploader_prefix,
-        interval=args.uploader_interval,
-        path=args.uploader_path,
+        interval=args.interval,
+        path="{}/{}".format(args.path, args.pattern),
     )
 
     logging.basicConfig(level=args.log_level)
