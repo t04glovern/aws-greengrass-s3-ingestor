@@ -57,9 +57,9 @@ class DirectoryUploader:
         self.logger = logger
         self.status_interval = min(config.interval, 1)
         self.interval = config.interval
-        self.files_processed = set()
+        self.files_processed: set[str] = set()
 
-        if self.client is None:
+        if not self.client:
             self.client = StreamManagerClient()
 
         logger.debug(f"DirectoryUploader initialized with {config}")
@@ -118,7 +118,7 @@ class DirectoryUploader:
             )
         )
 
-    async def _scan(self, under_test=False):
+    async def _scan(self, under_test: bool=False):
         """Scan the directory for new files and upload them."""
 
         keep_looping = True
@@ -134,7 +134,7 @@ class DirectoryUploader:
                     )
 
                     # Get all files sorted by modified time.
-                    files = sorted(glob.glob(self.pathname), key=os.path.getmtime)
+                    files: list[str] = sorted(glob.glob(self.pathname), key=os.path.getmtime)
                     if files:
                         # Remove most recent file as it is considered the active file
                         self.logger.debug(f"The current active file is: {files.pop()}")
@@ -163,11 +163,11 @@ class DirectoryUploader:
                 self.logger.exception("Exception while scanning directory")
             keep_looping = not under_test
 
-    async def _append_s3_task(self, file):
+    async def _append_s3_task(self, file: str):
         """Append a S3 Task definition to the stream and log the sequence number."""
 
         # Prepare the S3 Task definition.
-        head, tail = ntpath.split(file)
+        _, tail = ntpath.split(file)
         key_with_partition = f"{self.prefix}year=!{{timestamp:YYYY}}/month=!{{timestamp:MM}}/day=!{{timestamp:dd}}/hour=!{{timestamp:HH}}/{tail}"
         s3_export_task_definition = S3ExportTaskDefinition(
             input_url=f"file://{file}",
@@ -177,7 +177,7 @@ class DirectoryUploader:
 
         # Validate and serialize the S3 Task definition.
         try:
-            payload = Util.validate_and_serialize_to_json_bytes(
+            payload: bytes = Util.validate_and_serialize_to_json_bytes(
                 s3_export_task_definition
             )
         except ValidationException:
@@ -187,13 +187,12 @@ class DirectoryUploader:
             return
 
         # Append the S3 Task definition to the stream.
-        if payload is not None:
-            sequence_number = self.client.append_message(self.stream_name, payload)
-            self.logger.info(
-                f"Successfully appended S3 Task Definition to stream with sequence number {sequence_number}."
-            )
+        sequence_number = self.client.append_message(self.stream_name, payload)
+        self.logger.info(
+            f"Successfully appended S3 Task Definition to stream with sequence number {sequence_number}."
+        )
 
-    async def _process_status(self, under_test=False):
+    async def _process_status(self, under_test: bool=False):
         """Read the statuses from the export status stream."""
 
         next_seq = 0
@@ -217,7 +216,7 @@ class DirectoryUploader:
                 for message in messages_list:
                     if message.sequence_number is not None:
                         next_seq = message.sequence_number + 1
-                    status_message = Util.deserialize_json_bytes_to_obj(
+                    status_message: StatusMessage = Util.deserialize_json_bytes_to_obj(
                         message.payload, StatusMessage
                     )
                     self._handle_status_message(status_message)
@@ -231,7 +230,7 @@ class DirectoryUploader:
             await asyncio.sleep(self.status_interval)
             keep_looping = not under_test
 
-    def _handle_status_message(self, status_message):
+    def _handle_status_message(self, status_message: StatusMessage):
         """Handle a status message."""
 
         file_url = status_message.status_context.s3_export_task_definition.input_url

@@ -1,16 +1,71 @@
-# Greengrass Batch To S3 Component
+# Greengrass S3 Ingestor
 
-This component takes a stream of JSON messages from StreamManager and batches them into a gzip file. It uses a JSON Line (JSONL) format for the messages.
+The Greengrass S3 Ingestor component takes a stream of JSON messages from StreamManager and batches them into a gzip file. It uses a JSON Line (JSONL) format for the messages. The component enables efficient ingestion of data into S3 for further processing or storage.
 
 For a more detailed explanation of how this component works, see [DETAILS.md](DETAILS.md).
 
-## Sample Configuration
+## Operating system
 
-By default, this component will take the JSON message stream from the `BatchMessageStream` stream and batch it into a gzip file every 30 seconds. If configured with `gzip` as the output folder, the gzip files will be written to `/greengrass/v2/work/com.devopstar.json.gzip/gzip/` on the device - This might change depending on the installation path of Greengrass.
+This component can be installed on core devices that run the following operating systems:
 
-The BatchSize configuration is the minimum number of messages that will be batched into a gzip file. If there are not enough messages in the stream, the gzip file will not be created.
+* Linux
+* Windows
 
-The Maximum number of messages that will be batched into a gzip file is 10 times the BatchSize.
+## Requirements
+
+This component has the following requirements:
+
+* The [Greengrass device role](https://docs.aws.amazon.com/greengrass/v2/developerguide/device-service-role.html) must allow the following on the configured S3 bucket - When using a prefix, the bucket resource should include the prefix as well, e.g. `arn:aws:s3:::DOC-EXAMPLE-BUCKET/DOC-EXAMPLE-PREFIX/*`:
+
+  ```json
+  {
+    "Version": "2012-10-17",
+    "Statement": [
+      {
+        "Effect": "Allow",
+        "Action": [
+          "s3:PutObject",
+          "s3:AbortMultipartUpload",
+          "s3:ListMultipartUploadParts"
+        ],
+        "Resource": [
+          "arn:aws:s3:::DOC-EXAMPLE-BUCKET/*"
+        ]
+      }
+    ]
+  }
+  ```
+
+## Dependencies
+
+This component has the following dependencies:
+
+* **aws.greengrass.StreamManager**: VersionRequirement: ^2.0.0
+
+## Configuration
+
+This component provides the following configuration parameters that you can customize when deploying the Greengrass S3 Ingestor component.
+
+* `Path` - (Optional) Specifies the location where in-flight data is stored.
+  * **Default**: data - which results in data landing in the following location `/greengrass/v2/work/com.devopstar.S3Ingestor/data`, subject to the install location of greengrass on your device.
+  * **Example**: If you want to change the storage location to `/tmp/com.devopstar.S3Ingestor`, set Path as `/tmp/com.devopstar.S3Ingestor`.
+
+* `Interval` - (Optional) Determines the time interval (in seconds) after which messages are batched into a gzip file.
+  * **Default**: `30`
+
+* `Processor` - Configuration parameters related to message batching to files.
+  * `StreamName` - (Optional) The name of the stream from which the JSON messages are taken. This stream will be created for you as part of the deployment and can be published to by other components.
+    * **Default**: `BatchMessageStream`
+  * `BatchSize` - (Optional) The minimum number of messages that should be batched into a gzip file. If there aren't enough messages in the stream, the gzip file won't be generated. Furthermore, the maximum number of messages that will be batched into a gzip file is 10 times the `BatchSize`.
+    * **Default**: `200`
+
+* `Uploader` - Configuration parameters related to uploading batched files to S3.
+  * `BucketName` - Specifies the name of the S3 bucket where batched files are uploaded.
+  * `Prefix` - (Optional) Determines the folder prefix in the S3 bucket.
+    * **Default**: `""`
+
+* `LogLevel` - (Optional) Defines the logging level for the component operations.
+  * **Default**: `INFO`
 
 ### YAML example
 
@@ -21,8 +76,8 @@ ComponentDependencies:
     DependencyType: HARD
 ComponentConfiguration:
   DefaultConfiguration:
-    Path: "/tmp/greengrass/gzip"
-    Interval: "10"
+    Path: "data"
+    Interval: "30"
     Processor:
       StreamName: "BatchMessageStream"
       BatchSize: "200"
@@ -44,8 +99,8 @@ ComponentConfiguration:
   },
   "ComponentConfiguration": {
     "DefaultConfiguration": {
-      "Path": "/tmp/greengrass/gzip",
-      "Interval": "10",
+      "Path": "data",
+      "Interval": "30",
       "Processor": {
         "StreamName": "BatchMessageStream",
         "BatchSize": "200"
@@ -60,7 +115,19 @@ ComponentConfiguration:
 }
 ```
 
-## Development & Testing
+## Local Log File
+
+This component logs its operations and any potential issues to:
+
+* `/greengrass/v2/logs/com.devopstar.S3Ingestor.log`
+
+To view this component's logs, run the following command:
+
+```bash
+tail -f /greengrass/v2/logs/com.devopstar.S3Ingestor.log
+```
+
+## Development & Unit Testing
 
 ```bash
 python3 -m venv .venv
@@ -69,7 +136,7 @@ pip3 install -r requirements-dev.txt
 pytest
 ```
 
-## Publish Component
+## Build, Test & Publish Component
 
 ```bash
 # Build component
@@ -83,10 +150,3 @@ gdk test-e2e run
 # Publish component
 gdk component publish
 ```
-
-## Roadmap
-
-- [ ] August 2023 | Generalize the component to allow for different input and output formats. Right now this component only supports JSONL input and gzip output. I plan to rename this component to `greengrass-batch-to-s3 - com.devopstar.batch.to.s3` once I've confirmed that multiple inputs and outputs are feasible and worth doing. An example of an output format that I would like to support is Parquet.
-- [X] August 2023 | Remove the need for specifying the Path and Interval twice. Right now the Path and Interval are specified in the Processor and Uploader sections of the configuration. I would like to remove the need for this duplication.
-- [X] August 2023 | CI/CD pipeline for automated deployment of the component versions to my AWS account.
-- [X] September 2023 | Integrate [AWS Greengrass test framework](https://github.com/aws-greengrass/aws-greengrass-testing) into the CI/CD pipeline.

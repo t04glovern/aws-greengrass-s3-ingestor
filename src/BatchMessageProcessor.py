@@ -7,6 +7,8 @@ import os
 from datetime import datetime
 from dataclasses import dataclass
 
+from typing import List
+
 from stream_manager import (
     MessageStreamDefinition,
     ReadMessagesOptions,
@@ -15,6 +17,7 @@ from stream_manager import (
     StreamManagerClient,
     NotEnoughMessagesException,
 )
+from stream_manager.data import Message
 
 
 @dataclass
@@ -75,7 +78,7 @@ class BatchMessageProcessor:
         except ValueError:
             return False
 
-    async def _read_messages(self, under_test=False):
+    async def _read_messages(self, under_test: bool=False):
         """Reads messages from the stream and writes them into gzip files in batches."""
 
         next_seq = 0
@@ -85,7 +88,7 @@ class BatchMessageProcessor:
                 self.logger.debug("Reading messages from stream")
 
                 # Read messages from the stream.
-                messages_list = self.client.read_messages(
+                messages_list: List[Message] = self.client.read_messages(
                     self.stream_name,
                     ReadMessagesOptions(
                         desired_start_sequence_number=next_seq,
@@ -96,11 +99,11 @@ class BatchMessageProcessor:
                 )
 
                 # Extract and validate messages.
-                valid_messages = [
-                    message.payload.decode()
-                    for message in messages_list
-                    if self._is_valid_json(message.payload.decode())
-                ]
+                valid_messages: List[str] = []
+                for message in messages_list:
+                    decoded_payload = message.payload.decode()
+                    if self._is_valid_json(decoded_payload):
+                        valid_messages.append(decoded_payload)
 
                 self.logger.info(f"Read {len(valid_messages)} messages from stream")
                 self.logger.debug(f"Messages: {valid_messages}")
@@ -120,7 +123,7 @@ class BatchMessageProcessor:
             await asyncio.sleep(self.interval)
             keep_looping = not under_test
 
-    async def _write_to_gzip(self, valid_messages):
+    async def _write_to_gzip(self, valid_messages: List[str]) -> None:
         """Writes valid messages into a gzip file."""
 
         os.makedirs(self.output_folder, exist_ok=True)
@@ -133,10 +136,10 @@ class BatchMessageProcessor:
                 json_str = json.dumps(json_obj, separators=(",", ":"))
                 f.write(json_str + "\n")
 
-        self.logger.info(f"Successfully wrote batch_{self.batch_id} to {file_path}")
+        self.logger.info(f"Successfully wrote batch {self.batch_id} to {file_path}")
         self.batch_id += 1
 
-    async def run(self, under_test=False):
+    async def run(self, under_test: bool=False):
         """Starts the message reading process."""
 
         await self._read_messages(under_test=under_test)

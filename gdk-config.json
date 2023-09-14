@@ -1,6 +1,6 @@
 {
   "component": {
-    "com.devopstar.json.gzip": {
+    "com.devopstar.S3Ingestor": {
       "author": "Nathan Glover",
       "version": "NEXT_PATCH",
       "build": {
@@ -8,7 +8,7 @@
         "custom_build_command": [
           "bash",
           "custom-build.sh",
-          "--component-name=com.devopstar.json.gzip",
+          "--component-name=com.devopstar.S3Ingestor",
           "--component-version=NEXT_PATCH"
         ]
       },

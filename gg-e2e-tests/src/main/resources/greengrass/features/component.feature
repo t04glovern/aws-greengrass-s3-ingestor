@@ -14,7 +14,7 @@ Feature: Testing features of Greengrassv2 GDK_COMPONENT_NAME
             """
             {
                 "MERGE": {
-                    "Path": "/tmp/greengrass/gzip",
+                    "Path": "/tmp/com.devopstar.S3Ingestor/data",
                     "Interval": "5",
                     "Processor": {
                         "StreamName": "BatchMessageStream",
@@ -39,5 +39,5 @@ Feature: Testing features of Greengrassv2 GDK_COMPONENT_NAME
             """
         And I deploy the Greengrass deployment configuration
         Then the Greengrass deployment is COMPLETED on the device after 180 seconds
-        And the com.devopstar.json.gzip log on the device contains the line "Successfully wrote batch_0 to /tmp/greengrass/gzip/" within 60 seconds
+        And the com.devopstar.S3Ingestor log on the device contains the line "Successfully wrote batch 0 to /tmp/com.devopstar.S3Ingestor/data/" within 60 seconds
         And I call my custom step

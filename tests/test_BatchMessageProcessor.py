@@ -13,10 +13,10 @@ from stream_manager.data import Message
 
 class TestBatchMessageProcessor(unittest.TestCase):
     @unittest.mock.patch("src.BatchMessageProcessor.datetime")
-    def test_process_messages(self, mock_datetime):
+    def test_process_messages(self, mock_datetime: datetime):
         # Mock datetime to return a specific value
-        mock_datetime.now.return_value = datetime(2023, 1, 1, 12, 0, 0)
-        mock_datetime.datetime.now.return_value = datetime(2023, 1, 1, 12, 0, 0)  # for direct calls to datetime.datetime
+        mock_datetime.now.return_value = datetime(2023, 1, 1, 12, 0, 0)  # type: ignore
+        mock_datetime.datetime.now.return_value = datetime(2023, 1, 1, 12, 0, 0)  # for direct calls to datetime.datetime # type: ignore
 
         with tempfile.TemporaryDirectory() as tmpdirname:
             mock_client = unittest.mock.MagicMock()

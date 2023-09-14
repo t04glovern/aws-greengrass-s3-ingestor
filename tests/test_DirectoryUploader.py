@@ -1,3 +1,5 @@
+# pyright: reportPrivateUsage=false
+
 import unittest
 import unittest.mock
 import tempfile
@@ -87,7 +89,7 @@ class TestDirectoryUploader(unittest.TestCase):
         self.assertTrue(os.path.exists(filename))
 
         status_message.status = Status.Success
-        payload = Util.validate_and_serialize_to_json_bytes(status_message)
+        payload: bytes = Util.validate_and_serialize_to_json_bytes(status_message)
         test_message = Message(payload=payload)
         message_list = [test_message]
         read_messages_mock.return_value = message_list

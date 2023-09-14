@@ -6,6 +6,6 @@ This CloudFormation template creates the OIDC-enabled IAM role used by the CI/CD
 aws cloudformation deploy \
     --template-file ./.github/cfn/oidc-role.yml \
     --region ap-southeast-2 \
-    --stack-name oidc-t04glovern-aws-greengrass-json-gzip \
+    --stack-name oidc-t04glovern-aws-greengrass-s3-ingestor \
     --capabilities CAPABILITY_NAMED_IAM
 ```

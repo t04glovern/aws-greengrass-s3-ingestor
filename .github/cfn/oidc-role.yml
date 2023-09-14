@@ -1,19 +1,19 @@
 AWSTemplateFormatVersion: 2010-09-09
-Description: 'GitHub OIDC: t04glovern/aws-greengrass-json-gzip | Stack: oidc-t04glovern-aws-greengrass-json-gzip'
+Description: 'GitHub OIDC: t04glovern/aws-greengrass-s3-ingestor | Stack: oidc-t04glovern-aws-greengrass-s3-ingestor'
 
 Parameters:
   FullRepoName:
     Type: String
-    Default: t04glovern/aws-greengrass-json-gzip
+    Default: t04glovern/aws-greengrass-s3-ingestor
   GreengrassComponentName:
     Type: String
-    Default: com.devopstar.json.gzip
+    Default: com.devopstar.S3Ingestor
 
 Resources:
   Role:
     Type: AWS::IAM::Role
     Properties:
-      RoleName: oidc-t04glovern-aws-greengrass-json-gzip
+      RoleName: oidc-t04glovern-aws-greengrass-s3-ingestor
       Policies:
         - PolicyName: s3-greengrass-bucket
           PolicyDocument:

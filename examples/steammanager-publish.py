@@ -21,7 +21,7 @@ temperature = 25
 location = {'lat': -31.976056, 'lng': 115.9113084}
 
 
-def generate_random_json(id, speed, temperature, location):
+def generate_random_json(id: str, speed: float, temperature: float, location: dict[str, float]):
     speed += random.randint(-5, 5)
     temperature = round(temperature + random.uniform(-0.5, 0.5), 2)
     location['lat'] += random.uniform(-0.0001, 0.0001)
