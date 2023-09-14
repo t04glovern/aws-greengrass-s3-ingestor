@@ -10,7 +10,7 @@ ComponentDependencies:
     DependencyType: HARD
 ComponentConfiguration:
   DefaultConfiguration:
-    Path: "data"
+    Path: "/tmp/com.devopstar.S3Ingestor/data"
     Interval: "30"
     Processor:
       StreamName: "BatchMessageStream"

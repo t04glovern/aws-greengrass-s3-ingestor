@@ -47,7 +47,7 @@ This component has the following dependencies:
 This component provides the following configuration parameters that you can customize when deploying the Greengrass S3 Ingestor component.
 
 * `Path` - (Optional) Specifies the location where in-flight data is stored.
-  * **Default**: data - which results in data landing in the following location `/greengrass/v2/work/com.devopstar.S3Ingestor/data`, subject to the install location of greengrass on your device.
+  * **Default**: `/tmp/com.devopstar.S3Ingestor/data`
   * **Example**: If you want to change the storage location to `/tmp/com.devopstar.S3Ingestor`, set Path as `/tmp/com.devopstar.S3Ingestor`.
 
 * `Interval` - (Optional) Determines the time interval (in seconds) after which messages are batched into a gzip file.
@@ -76,7 +76,7 @@ ComponentDependencies:
     DependencyType: HARD
 ComponentConfiguration:
   DefaultConfiguration:
-    Path: "data"
+    Path: "/tmp/com.devopstar.S3Ingestor/data"
     Interval: "30"
     Processor:
       StreamName: "BatchMessageStream"
@@ -99,7 +99,7 @@ ComponentConfiguration:
   },
   "ComponentConfiguration": {
     "DefaultConfiguration": {
-      "Path": "data",
+      "Path": "/tmp/com.devopstar.S3Ingestor/data",
       "Interval": "30",
       "Processor": {
         "StreamName": "BatchMessageStream",
@@ -144,7 +144,7 @@ gdk component build
 gdk test-e2e build
 
 # Run integration tests
-export AWS_REGION=ap-southeast-2 
+export AWS_REGION=ap-southeast-2
 gdk test-e2e run
 
 # Publish component
