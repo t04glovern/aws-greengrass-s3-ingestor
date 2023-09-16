@@ -24,7 +24,7 @@
         runs-on: ubuntu-latest
         steps:
           - name: Checkout repo
-            uses: actions/checkout@v3
+            uses: actions/checkout@v4
     
           - uses: actions/setup-python@v4
             with:
@@ -34,7 +34,7 @@
             run: pip install -r requirements-dev.txt
     
           - name: Run PyTest
-            run: pytest --cov-report=xml:coverage.xml --cov=src
+            run: pytest
     
           - name: Code Coverage Summary Report
             uses: irongut/CodeCoverageSummary@v1.3.0
