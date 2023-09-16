@@ -20,6 +20,7 @@ from stream_manager import (
     StatusMessage,
     StrategyOnFull,
     StreamManagerClient,
+    StreamManagerException,
     ValidationException,
     NotEnoughMessagesException,
 )

@@ -12,9 +12,9 @@ from typing import List
 from stream_manager import (
     MessageStreamDefinition,
     ReadMessagesOptions,
-    ResourceNotFoundException,
     StrategyOnFull,
     StreamManagerClient,
+    StreamManagerException,
     NotEnoughMessagesException,
 )
 from stream_manager.data import Message
@@ -83,7 +83,7 @@ class BatchMessageProcessor:
         This method checks if the message stream exists and creates it if it doesn't.
         """
 
-        stream_definition = MessageStreamDefinition(
+        stream_definition: MessageStreamDefinition = MessageStreamDefinition(
             name=self.stream_name,
             strategy_on_full=StrategyOnFull.OverwriteOldestData,
         )
@@ -91,10 +91,10 @@ class BatchMessageProcessor:
         try:
             self.client.describe_message_stream(stream_name=self.stream_name)
             self.logger.info(f"Stream {self.stream_name} already exists. Updating it...")
-            self.client.update_message_stream(stream_definition=stream_definition)
+            self.client.update_message_stream(definition=stream_definition)
         except StreamManagerException:
             self.logger.info(f"Creating stream {self.stream_name}...")
-            self.client.create_message_stream(stream_definition=stream_definition)
+            self.client.create_message_stream(definition=stream_definition)
 
     @staticmethod
     def _is_valid_json(message: str) -> bool:
@@ -131,7 +131,7 @@ class BatchMessageProcessor:
                 self.logger.debug("Reading messages from stream")
 
                 # Read messages from the stream.
-                messages_list = self.client.read_messages(
+                messages_list: List[Message] = self.client.read_messages(
                     self.stream_name,
                     ReadMessagesOptions(
                         desired_start_sequence_number=next_seq,
@@ -142,7 +142,7 @@ class BatchMessageProcessor:
                 )
 
                 # Extract and validate messages.
-                valid_messages = []
+                valid_messages: List[str] = []
                 for message in messages_list:
                     decoded_payload = message.payload.decode()
                     if self._is_valid_json(decoded_payload):
@@ -159,6 +159,8 @@ class BatchMessageProcessor:
                 if messages_list:
                     next_seq = messages_list[-1].sequence_number + 1
 
+            except NotEnoughMessagesException:
+                pass
             except StreamManagerException as e:
                 self.logger.error(f"StreamManagerException occurred: {e}")
                 # Maybe add some retries or specific handling based on the exception details.
