@@ -10,6 +10,7 @@ build
 *.eggs
 *venv
 *vscode
+coverage.xml
 
 # GDK Build
 bundle.zip
