@@ -19,6 +19,9 @@ from stream_manager import (
 from stream_manager.data import Message
 from stream_manager.util import Util
 
+logging.basicConfig(level=logging.DEBUG)
+logger = logging.getLogger()
+
 
 class TestDirectoryUploader(unittest.TestCase):
     def test_scan(self):
@@ -89,7 +92,8 @@ class TestDirectoryUploader(unittest.TestCase):
         self.assertTrue(os.path.exists(filename))
 
         status_message.status = Status.Success
-        payload: bytes = Util.validate_and_serialize_to_json_bytes(status_message)
+        payload: bytes = Util.validate_and_serialize_to_json_bytes(
+            status_message)
         test_message = Message(payload=payload)
         message_list = [test_message]
         read_messages_mock.return_value = message_list
@@ -145,10 +149,6 @@ class TestDirectoryUploader(unittest.TestCase):
         loop.run_until_complete(du._scan(under_test=True))
         mock_client.assert_not_called()
         mock_error.assert_called_once()
-
-
-logging.basicConfig(level=logging.DEBUG)
-logger = logging.getLogger()
 
 if __name__ == "__main__":
     unittest.main()
