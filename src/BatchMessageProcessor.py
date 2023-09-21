@@ -12,6 +12,7 @@ from typing import List
 from stream_manager import (
     MessageStreamDefinition,
     ReadMessagesOptions,
+    ResourceNotFoundException,
     StrategyOnFull,
     StreamManagerClient,
     StreamManagerException,
@@ -80,21 +81,21 @@ class BatchMessageProcessor:
     def _prepare_stream(self):
         """Prepares the message stream for use by the BatchMessageProcessor.
 
-        This method checks if the message stream exists and creates it if it doesn't.
+        This method checks if the message stream exists and deletes it if it does.
         """
 
-        stream_definition: MessageStreamDefinition = MessageStreamDefinition(
-            name=self.stream_name,
-            strategy_on_full=StrategyOnFull.OverwriteOldestData,
-        )
-
         try:
-            self.client.describe_message_stream(stream_name=self.stream_name)
-            self.logger.info(f"Stream {self.stream_name} already exists. Updating it...")
-            self.client.update_message_stream(definition=stream_definition)
-        except StreamManagerException:
-            self.logger.info(f"Creating stream {self.stream_name}...")
-            self.client.create_message_stream(definition=stream_definition)
+            self.client.delete_message_stream(stream_name=self.stream_name)
+        except ResourceNotFoundException:
+            pass
+        
+        self.logger.info(f"Creating stream {self.stream_name}...")
+        self.client.create_message_stream(
+            definition=MessageStreamDefinition(
+                name=self.stream_name,
+                strategy_on_full=StrategyOnFull.OverwriteOldestData,
+            )
+        )
 
     @staticmethod
     def _is_valid_json(message: str) -> bool:

@@ -11,6 +11,7 @@ from src.BatchMessageProcessor import BatchMessageProcessor, ProcessorConfig
 
 from stream_manager import (
     NotEnoughMessagesException,
+    ResourceNotFoundException,
     StreamManagerException
 )
 from stream_manager.data import Message
@@ -138,8 +139,6 @@ class TestBatchMessageProcessor(unittest.TestCase):
 
         with tempfile.TemporaryDirectory() as tmpdirname:
             mock_client = unittest.mock.MagicMock()
-            # Mock describe_message_stream to raise StreamManagerException
-            mock_client.describe_message_stream.side_effect = StreamManagerException("Mock Exception on describe")
 
             config = ProcessorConfig(stream_name="stream1", batch_size=3, path=tmpdirname, interval=1)
 
@@ -167,9 +166,6 @@ class TestBatchMessageProcessor(unittest.TestCase):
 
             # Running the processor to check if it handles the NotEnoughMessagesException without crashing
             loop.run_until_complete(bmp.run(under_test=True))
-
-            # Optionally, verify that certain methods are not called after the exception
-            mock_client.create_message_stream.assert_not_called()
 
     @unittest.mock.patch("src.BatchMessageProcessor.datetime")
     @unittest.mock.patch("asyncio.sleep", return_value=None)  # Mocking sleep to avoid real delays
