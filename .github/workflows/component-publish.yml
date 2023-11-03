@@ -9,7 +9,7 @@ on:
 env:
   GREENGRASS_COMPONENT_NAME: com.devopstar.S3Ingestor
   GREENGRASS_REGION: ap-southeast-2
-  GREENGRASS_DEV_KIT_VERSION: v1.3.0
+  GREENGRASS_DEV_KIT_VERSION: v1.5.0
 
 jobs:
   publish:
