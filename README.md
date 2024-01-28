@@ -2,7 +2,7 @@
 
 The Greengrass S3 Ingestor component takes a stream of JSON messages from StreamManager and batches them into a gzip file. It uses a JSON Line (JSONL) format for the messages. The component enables efficient ingestion of data into S3 for further processing or storage.
 
-For a more detailed explanation of how this component works, see [DETAILS.md](DETAILS.md).
+For a more detailed explanation of how this component works, see: [https://devopstar.com/2024/01/28/s3-batching-drastically-simplifying-your-iot-architecture](https://devopstar.com/2024/01/28/s3-batching-drastically-simplifying-your-iot-architecture)
 
 ## Operating system
 
